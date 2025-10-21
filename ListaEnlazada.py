@@ -1,146 +1,113 @@
-import random 
+class Node:
+    def __init__(self, data):
+        self._data = data
+        self._next = None
+        
+    def set_data(self, data):
+        self._data = data 
+        
+    def get_data(self):
+        return self._data 
+    
+    def set_next(self, node):
+        self._next = node 
+        
+    def get_next(self):
+        return self._next   
 
-class Nodo:
-    """Nodo para lista enlazada"""
-    def __init__(self, dato):
-        self.dato = dato
-        self.siguiente = None
-        self.anterior = None
 
-
-class ListaEnlazada:
-    """Lista doblemente enlazada"""
+class LinkedList:
     def __init__(self):
-        self.cabeza = None
-        self.cola = None
-        self.tamanio = 0
-    
-    def esta_vacia(self):
-        return self.cabeza is None
-    
-    def agregar_al_final(self, dato):
-        """Agrega un elemento al final de la lista"""
-        nuevo = Nodo(dato)
-        if self.esta_vacia():
-            self.cabeza = self.cola = nuevo
-        else:
-            self.cola.siguiente = nuevo
-            nuevo.anterior = self.cola
-            self.cola = nuevo
-        self.tamanio += 1
-    
-    def agregar_al_inicio(self, dato):
-        """Agrega un elemento al inicio de la lista"""
-        nuevo = Nodo(dato)
-        if self.esta_vacia():
-            self.cabeza = self.cola = nuevo
-        else:
-            nuevo.siguiente = self.cabeza
-            self.cabeza.anterior = nuevo
-            self.cabeza = nuevo
-        self.tamanio += 1
-    
-    def eliminar(self, dato):
-        """Elimina un elemento específico de la lista"""
-        actual = self.cabeza
-        while actual:
-            if actual.dato == dato:
-                if actual.anterior:
-                    actual.anterior.siguiente = actual.siguiente
+        self.__head = None
+
+    def add(self, data):
+        new_node = Node(data)
+        if not self.__head:
+            self.__head = new_node
+            return
+        current = self.__head
+        while current.get_next() is not None:
+            current = current.get_next()
+        current.set_next(new_node)
+
+    def insert_init(self, data):
+        new_node = Node(data)
+        new_node.set_next(self.__head)
+        self.__head = new_node
+
+    def remove_index(self, index):
+        if self.is_empty():
+            raise Exception("removing from empty list")
+        if index < 0:
+            raise Exception("index out of range")
+
+        current = self.__head
+        prev = None
+        idx = 0
+        while current:
+            if idx == index:
+                if prev is None:
+                    self.__head = current.get_next()
                 else:
-                    self.cabeza = actual.siguiente
-                
-                if actual.siguiente:
-                    actual.siguiente.anterior = actual.anterior
+                    prev.set_next(current.get_next())
+                return
+            prev = current
+            current = current.get_next()
+            idx += 1
+        raise Exception("index out of range")
+
+    def remove_value(self, value):
+        if self.is_empty():
+            return False
+        prev = None
+        current = self.__head
+        while current is not None:
+            if current.get_data() == value:
+                nxt = current.get_next()
+                if prev is None:
+                    self.__head = nxt
                 else:
-                    self.cola = actual.anterior
-                
-                self.tamanio -= 1
+                    prev.set_next(nxt)
                 return True
-            actual = actual.siguiente
+            prev = current
+            current = current.get_next()
         return False
-    
-    def buscar(self, criterio):
-        """Busca elementos que cumplan un criterio (función lambda)"""
-        resultados = []
-        actual = self.cabeza
-        while actual:
-            if criterio(actual.dato):
-                resultados.append(actual.dato)
-            actual = actual.siguiente
-        return resultados
-    
-    def obtener_lista(self):
-        """Retorna todos los elementos como lista de Python (para debug)"""
-        elementos = []
-        actual = self.cabeza
-        while actual:
-            elementos.append(actual.dato)
-            actual = actual.siguiente
-        return elementos
-    
-    def __len__(self):
-        return self.tamanio
-    
-    def __iter__(self):
-        actual = self.cabeza
-        while actual:
-            yield actual.dato
-            actual = actual.siguiente
 
+    def find(self, predicate):
+        results = []
+        current = self.__head
+        while current is not None:
+            d = current.get_data()
+            try:
+                if predicate(d):
+                    results.append(d)
+            except Exception:
+                pass
+            current = current.get_next()
+        return results
 
-class Deque:
-    """Deque (cola de doble extremo) para gestión de disponibilidad"""
-    def __init__(self):
-        self.items = ListaEnlazada()
-    
-    def esta_vacia(self):
-        return self.items.esta_vacia()
-    
-    def agregar_frente(self, item):
-        """Agrega al frente (mayor prioridad)"""
-        self.items.agregar_al_inicio(item)
-    
-    def agregar_atras(self, item):
-        """Agrega al final (menor prioridad)"""
-        self.items.agregar_al_final(item)
-    
-    def quitar_frente(self):
-        """Quita del frente"""
-        if self.esta_vacia():
-            raise IndexError("Deque vacío")
-        dato = self.items.cabeza.dato
-        self.items.eliminar(dato)
-        return dato
-    
-    def quitar_atras(self):
-        """Quita del final"""
-        if self.esta_vacia():
-            raise IndexError("Deque vacío")
-        dato = self.items.cola.dato
-        self.items.eliminar(dato)
-        return dato
-    
-    def ver_frente(self):
-        """Ver elemento del frente sin quitarlo"""
-        if self.esta_vacia():
-            return None
-        return self.items.cabeza.dato
-    
-    def ver_atras(self):
-        """Ver elemento del final sin quitarlo"""
-        if self.esta_vacia():
-            return None
-        return self.items.cola.dato
-    
-    def tamanio(self):
-        return len(self.items)
-    
-    def obtener_lista(self):
-        return self.items.obtener_lista()
-    
+    def to_list(self):
+        out = []
+        current = self.__head
+        while current is not None:
+            out.append(current.get_data())
+            current = current.get_next()
+        return out
+
+    def is_empty(self):
+        return self.__head is None
+
     def __len__(self):
-        return len(self.items)
-    
+        n = 0
+        current = self.__head
+        while current is not None:
+            n += 1
+            current = current.get_next()
+        return n
+
     def __iter__(self):
-        return iter(self.items)
+        current = self.__head
+        while current is not None:
+            yield current.get_data()
+            current = current.get_next()
+
