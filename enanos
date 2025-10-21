@@ -1,0 +1,111 @@
+
+import random
+
+
+
+class Enano(Personaje):
+    """Clase especial para enanos - los personajes principales"""
+    OFICIOS = ['Minero', 'Leñador', 'Granjero', 'Constructor', 
+               'Guerrero', 'Cazador', 'Herrero', 'Cocinero']
+    
+    def __init__(self, oficio=None, posicion=(0, 0)):
+        super().__init__('Enano', '👨', posicion)
+        self.oficio = oficio if oficio else random.choice(self.OFICIOS)
+        self.habilidades = self._generar_habilidades()
+        self.energia = 100
+        self.energia_max = 100
+        self.hambre = 0
+        self.sed = 0
+        self.moral = 100
+        self.inventario = {}
+        self.accion_actual = None
+        self.tiempo_ocupado = 0
+        
+    def _generar_habilidades(self):
+        """Genera habilidades según el oficio"""
+        habilidades = {
+            'Minero': {'Minar': random.randint(7, 10), 'Fuerza': random.randint(5, 8)},
+            'Leñador': {'Talar': random.randint(7, 10), 'Fuerza': random.randint(6, 9)},
+            'Granjero': {'Recolectar': random.randint(7, 10), 'Plantar': random.randint(6, 9)},
+            'Constructor': {'Construir': random.randint(7, 10), 'Diseño': random.randint(5, 8)},
+            'Guerrero': {'Combate': random.randint(8, 10), 'Defensa': random.randint(7, 10)},
+            'Cazador': {'Cazar': random.randint(7, 10), 'Punteria': random.randint(6, 9)},
+            'Herrero': {'Forjar': random.randint(7, 10), 'Reparar': random.randint(6, 8)},
+            'Cocinero': {'Cocinar': random.randint(7, 10), 'Preservar': random.randint(5, 8)}
+        }
+        return habilidades.get(self.oficio, {'General': 5})
+    
+    def calcular_compatibilidad(self, tipo_accion):
+        """Calcula qué tan compatible es el enano para una acción"""
+        compatibilidad_base = {
+            'Minar': {'Minero': 10, 'Guerrero': 5, 'Herrero': 6},
+            'Talar': {'Leñador': 10, 'Constructor': 6, 'Granjero': 4},
+            'Recolectar': {'Granjero': 10, 'Cocinero': 7, 'Cazador': 5},
+            'Cazar': {'Cazador': 10, 'Guerrero': 7, 'Granjero': 4},
+            'Pescar': {'Cazador': 8, 'Granjero': 7, 'Cocinero': 6},
+            'Construir': {'Constructor': 10, 'Minero': 5, 'Herrero': 6},
+            'Defender': {'Guerrero': 10, 'Cazador': 7, 'Minero': 5},
+            'Forjar': {'Herrero': 10, 'Minero': 6, 'Constructor': 4},
+            'Cocinar': {'Cocinero': 10, 'Granjero': 6}
+        }
+        
+        compatibilidad = compatibilidad_base.get(tipo_accion, {}).get(self.oficio, 1)
+        
+        # Bonificadores por nivel y habilidades
+        nivel_bonus = self.nivel * 0.5
+        habilidad_relacionada = list(self.habilidades.values())[0] if self.habilidades else 0
+        
+        return compatibilidad + nivel_bonus + (habilidad_relacionada * 0.3)
+    
+    def asignar_accion(self, accion):
+        """Asigna una acción al enano"""
+        self.accion_actual = accion
+        self.estado = 'ocupado'
+        self.tiempo_ocupado = accion.get('duracion', 10)
+    
+    def completar_accion(self):
+        """Completa la acción actual"""
+        if self.accion_actual:
+            self.ganar_experiencia(10)
+            self.energia = max(0, self.energia - 20)
+            self.hambre = min(100, self.hambre + 10)
+            self.sed = min(100, self.sed + 15)
+            
+            accion = self.accion_actual
+            self.accion_actual = None
+            self.estado = 'disponible'
+            self.tiempo_ocupado = 0
+            return accion
+        return None
+    
+    def consumir_recurso(self, tipo, cantidad=1):
+        """Consume recursos del inventario"""
+        if tipo in self.inventario and self.inventario[tipo] >= cantidad:
+            self.inventario[tipo] -= cantidad
+            return True
+        return False
+    
+    def agregar_recurso(self, tipo, cantidad=1):
+        """Agrega recursos al inventario"""
+        if tipo not in self.inventario:
+            self.inventario[tipo] = 0
+        self.inventario[tipo] += cantidad
+    
+    def actualizar_necesidades(self):
+        """Actualiza hambre, sed y moral"""
+        self.hambre = min(100, self.hambre + 1)
+        self.sed = min(100, self.sed + 2)
+        
+        # La moral baja si tiene hambre/sed
+        if self.hambre > 70 or self.sed > 70:
+            self.moral = max(0, self.moral - 2)
+        elif self.hambre < 30 and self.sed < 30:
+            self.moral = min(100, self.moral + 1)
+    
+    def descansar(self):
+        """Recupera energía"""
+        self.energia = min(self.energia_max, self.energia + 30)
+        self.estado = 'disponible'
+    
+    def __repr__(self):
+        return f"{self.simbolo} {self.nombre} ({self.oficio}) Nv.{self.nivel} [{self.estado}]"
