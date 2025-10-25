@@ -86,41 +86,7 @@ class Deque:
         self._tail = None
         self._size = 0
 
-    def as_list(self):
-        out = []
-        i = self._head
-        while i is not None:
-            out.append(i.data)
-            i = i.next
-        return out
-
-    def insert_front(self, data):
-        self.push_front(data)
-
-    def insert_rear(self, data):
-        self.push_back(data)
-
-    def remove_front(self):
-        if self._head is None:
-            raise IndexError("remove_front from empty queue")
-        return self.pop_front()
-
-    def remove_rear(self):
-        if self._tail is None:
-            raise IndexError("remove_rear from empty queue")
-        return self.pop_back()
-
-    def get_front(self):
-        if self._head is None:
-            raise IndexError("get_front from empty queue")
-        return self._head.data
-
-    def get_rear(self):
-        if self._tail is None:
-            raise IndexError("get_rear from empty queue")
-        return self._tail.data
-
-    def size(self):
+    def __len__(self):
         return self._size
 
     def __iter__(self):
@@ -128,9 +94,6 @@ class Deque:
         while i is not None:
             yield i.data
             i = i.next
-
-    def __len__(self):
-        return self._size
 
     def __repr__(self):
         return f"Deque(size={self._size})"
