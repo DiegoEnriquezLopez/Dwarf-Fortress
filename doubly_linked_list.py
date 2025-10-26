@@ -24,15 +24,15 @@ class DNode:
     
 
 class DoublyLinkedList:
-    def __init__(self, data = None):
+    def __init__(self, data=None):
         self.__head = None
         self.__tail = None
         
-        if data != None:
+        if data is not None:
             try:
                 for d in data:
                     self.append(d)
-            except:
+            except TypeError:
                 self.append(data)
         
     def append(self, data):
@@ -40,17 +40,15 @@ class DoublyLinkedList:
         if self.is_empty():
             self.__head = self.__tail = new_node
             return
-        
         self.__tail.set_next(new_node)
         new_node.set_prev(self.__tail)
         self.__tail = new_node
     
-    def preppend(self, data):
+    def preppend(self, data):  
         new_node = DNode(data)
         if self.is_empty():
             self.__head = self.__tail = new_node
             return
-        
         self.__head.set_prev(new_node)
         new_node.set_next(self.__head)
         self.__head = new_node
@@ -72,66 +70,25 @@ class DoublyLinkedList:
                         self.__head.set_prev(None)
                     else:
                         self.__tail = None
-                    return  
                 elif current == self.__tail:
                     self.__tail = current.get_prev()
                     if self.__tail is not None:
                         self.__tail.set_next(None)
                     else:
                         self.__head = None
-                    return  
                 else:
                     prev = current.get_prev()
                     nxt = current.get_next()
                     prev.set_next(nxt)
                     nxt.set_prev(prev)
-                    return  
+                return
             current = current.get_next()
             idx += 1
         raise IndexError("index out of range")
 
     def __remove_value(self, value):
         if self.is_empty():
-            raise Exception("removing form empty list")
-        current = self.__head
-        while current != None:
-            if current.get_data() == value:
-                if current == self.__head:
-                    self.__head = current.get_next()
-                    if self.__head != None:
-                        self.__head.set_prev(None)
-                    else:
-                        self.__tail = None
-                elif current == self.__tail:
-                    self.__tail = current.get_prev()
-                    if self.__tail != None:
-                        self.__tail.set_next(None)
-                    else:
-                        self.__head = None
-                else:
-                    current.get_prev().set_next(current.get_next())
-                    current.get_next().set_prev(current.get_prev())
-            current = current.get_next()
-
-    def remove(self, index = None, value = None):
-        if self.is_empty():
-            raise Exception("removing form empty list")
-        if index != None and value != None:
-            raise Exception("index and value must be given exclusively")
-        if index != None:
-            self.__remove_index(index)
-        if value != None:
-            self.__remove_value(value)
-        
-    def is_empty(self):
-        return self.__head is None
-
-    def insert_init(self, data):
-        self.preppend(data)
-
-    def remove_value(self, value):
-        if self.is_empty():
-            return False
+            raise Exception("removing from empty list")
         current = self.__head
         while current is not None:
             if current.get_data() == value:
@@ -148,13 +105,23 @@ class DoublyLinkedList:
                     else:
                         self.__head = None
                 else:
-                    prev = current.get_prev()
-                    nxt = current.get_next()
-                    prev.set_next(nxt)
-                    nxt.set_prev(prev)
-                return True
+                    current.get_prev().set_next(current.get_next())
+                    current.get_next().set_prev(current.get_prev())
+                return  # salir tras borrar una coincidencia
             current = current.get_next()
-        return False
+
+    def remove(self, index=None, value=None):
+        if self.is_empty():
+            raise Exception("removing from empty list")
+        if index is not None and value is not None:
+            raise Exception("index and value must be given exclusively")
+        if index is not None:
+            self.__remove_index(index)
+        if value is not None:
+            self.__remove_value(value)
+        
+    def is_empty(self):
+        return self.__head is None
 
     def find(self, predicate):
         resultados = []
