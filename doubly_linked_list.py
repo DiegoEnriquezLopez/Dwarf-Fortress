@@ -125,37 +125,36 @@ class DoublyLinkedList:
     def is_empty(self):
         return self._head is None
 
-    def find(self, predicate):
-        resultados = []
-        cur = self._head
-        while cur is not None:
-            d = cur.get_data()
-            try:
-                if predicate(d):
-                    resultados.append(d)
-            except Exception:
-                pass
-            cur = cur.get_next()
-        return resultados
+def to_list(lista):
+    datos = []
+    nodo = lista._head
+    while nodo is not None:
+        datos.append(nodo.get_data())
+        nodo = nodo.get_next()
+    return datos
 
-    def to_list(self):
-        out = []
-        cur = self._head
-        while cur is not None:
-            out.append(cur.get_data())
-            cur = cur.get_next()
-        return out
 
-    def __len__(self):
-        n = 0
-        cur = self._head
-        while cur is not None:
-            n += 1
-            cur = cur.get_next()
-        return n
+def find(lista, valor):
+    resultados = []
+    nodo = lista._head
+    while nodo is not None:
+        if nodo.get_data() == valor:
+            resultados.append(nodo.get_data())
+        nodo = nodo.get_next()
+    return resultados
 
-    def __iter__(self):
-        cur = self._head
-        while cur is not None:
-            yield cur.get_data()
-            cur = cur.get_next()
+
+def length(lista):
+    contador = 0
+    nodo = lista._head
+    while nodo is not None:
+        contador += 1
+        nodo = nodo.get_next()
+    return contador
+
+
+def iterate(lista):
+    nodo = lista._head
+    while nodo is not None:
+        yield nodo.get_data()
+        nodo = nodo.get_next()
