@@ -40,9 +40,8 @@ class Deque:
     def pop_front(self):
         if self._head is None:
             return None
-        n = self._head
-        val = n.data
-        self._head = n.next
+        val = self._head.data
+        self._head = self._head.next
         if self._head is None:
             self._tail = None
         else:
@@ -53,9 +52,8 @@ class Deque:
     def pop_back(self):
         if self._tail is None:
             return None
-        n = self._tail
-        val = n.data
-        self._tail = n.prev
+        val = self._tail.data
+        self._tail = self._tail.prev
         if self._tail is None:
             self._head = None
         else:
@@ -72,16 +70,7 @@ class Deque:
     def empty(self):
         return self._size == 0
 
-    def count(self):
-        return self._size
-
     def clear(self):
-        i = self._head
-        while i is not None:
-            nxt = i.next
-            i.prev = None
-            i.next = None
-            i = nxt
         self._head = None
         self._tail = None
         self._size = 0
@@ -94,7 +83,3 @@ class Deque:
         while i is not None:
             yield i.data
             i = i.next
-
-    def __repr__(self):
-        return f"Deque(size={self._size})"
-
