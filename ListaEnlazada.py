@@ -72,42 +72,44 @@ class LinkedList:
             prev = current
             current = current.get_next()
         return False
-
-    def find(self, predicate):
-        results = []
-        current = self._head
-        while current is not None:
-            d = current.get_data()
-            try:
-                if predicate(d):
-                    results.append(d)
-            except Exception:
-                pass
-            current = current.get_next()
-        return results
-
-    def to_list(self):
-        out = []
-        current = self._head
-        while current is not None:
-            out.append(current.get_data())
-            current = current.get_next()
-        return out
-
+    
     def is_empty(self):
         return self._head is None
 
-    def __len__(self):
-        n = 0
-        current = self._head
-        while current is not None:
-            n += 1
-            current = current.get_next()
-        return n
+def find(lista, predicate):
+    resultados = []
+    current = lista._head
+    while current is not None:
+        d = current.get_data()
+        try:
+            if predicate(d):
+                resultados.append(d)
+        except Exception:
+            pass
+        current = current.get_next()
+    return resultados
 
-    def __iter__(self):
-        current = self._head
-        while current is not None:
-            yield current.get_data()
-            current = current.get_next()
 
+def to_list(lista):
+    datos = []
+    current = lista._head
+    while current is not None:
+        datos.append(current.get_data())
+        current = current.get_next()
+    return datos
+
+
+def length(lista):
+    contador = 0
+    current = lista._head
+    while current is not None:
+        contador += 1
+        current = current.get_next()
+    return contador
+
+
+def iterate(lista):
+    current = lista._head
+    while current is not None:
+        yield current.get_data()
+        current = current.get_next()
