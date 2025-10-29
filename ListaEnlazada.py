@@ -106,10 +106,3 @@ def length(lista):
         contador += 1
         current = current.get_next()
     return contador
-
-
-def iterate(lista):
-    current = lista._head
-    while current is not None:
-        yield current.get_data()
-        current = current.get_next()
