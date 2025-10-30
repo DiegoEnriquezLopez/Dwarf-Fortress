@@ -1,4 +1,4 @@
-from ListaEnlazada import LinkedList, to_list, find, length
+from ListaEnlazada import LinkedList, to_list, find, length, iterate
 from game_queue import Queue
 from deque import Deque
 import random
@@ -42,11 +42,27 @@ class Personaje:
         self.oficio = tipo
         self.accion_actual = None
         self.tiempo_ocupado = 0
-        # inventario propio
+        # inventario propio del personaje (✔ lo pediste)
         self.inventario = LinkedList()
-        # deseo de cerveza (se activa cuando no está feliz)
-        self.desea_cerveza = False
 
+    # ---- utilidades sobre inventario usando tus funciones externas ----
+    def tiene_en_inventario(self, nombre_item):
+        resultados = find(self.inventario, lambda d: d == nombre_item)
+        return len(resultados) > 0
+
+    def contar_inventario(self):
+        return length(self.inventario)
+
+    def consumir_de_inventario(self, nombre_item):
+        """Intenta quitar 1 item del inventario"""
+        # como tu LinkedList seguro tiene remove_value, lo usamos
+        try:
+            self.inventario.remove_value(nombre_item)
+            return True
+        except Exception:
+            return False
+
+    # ------------------------------------------------------------------
     def calcular_compatibilidad(self, tipo_accion):
         return 1.0
 
@@ -102,119 +118,72 @@ class Personaje:
         return resultado
 
     def actualizar_necesidades(self):
-        # suben hambre y sed
         self.hambre = min(100, self.hambre + 2)
         self.sed = min(100, self.sed + 3)
-
-        # si tiene mucha sed -> prioridad es agua
-        # si no está feliz y no tiene tanta sed -> le dan ganas de cerveza
-        if self.sed >= 70:
-            self.desea_cerveza = False
-        else:
-            # solo pide cerveza cuando no está feliz
-            self.desea_cerveza = (self.sentimiento != Sentimiento.FELIZ)
 
         if self.hambre > 80 or self.sed > 80:
             self.sentimiento = Sentimiento.ENOJADO
         elif self.hambre > 60 or self.sed > 60:
             self.sentimiento = Sentimiento.TRISTE
         elif self.hambre < 30 and self.sed < 30:
-            # solo vuelve a feliz cuando ya no tiene necesidades fuertes
             self.sentimiento = Sentimiento.FELIZ
 
-    def comer(self, planificador=None, cofre_alimentos=None):
+    def comer(self):
+        """Come primero de su inventario; si no hay, no come aquí.
+        (En la prueba/planificador se puede mandar al cofre)
+        """
         if not self.esta_vivo():
             return False
 
-        # 1) buscar en inventario
-        hay_comida = find(self.inventario, lambda d: d in ("trigo", "carne", "pan", "huevos"))
-        if len(hay_comida) > 0:
-            self.hambre = max(0, self.hambre - 40)
-            self.salud = min(100, self.salud + 10)
-            self.sentimiento = Sentimiento.FELIZ
-            print(f"🍖 {self.tipo} comió de su inventario")
-            return True
-
-        # 2) pedir al planificador
-        if planificador is not None:
-            planificador.agregar_orden_usuario("comer", {"personaje": self})
-            print(f"📨 {self.tipo} pidió comida al planificador")
-            return False
-
-        # 3) intentar cofre si existiera
-        if cofre_alimentos is not None:
-            ok = cofre_alimentos.retirar("trigo", 1)
-            if not ok:
-                ok = cofre_alimentos.retirar("carne", 1)
-            if ok:
+        # 1) intentar comer trigo/pan/carne del inventario
+        for posible in ["trigo", "pan", "carne"]:
+            if self.tiene_en_inventario(posible):
+                self.consumir_de_inventario(posible)
+                self.salud = min(100, self.salud + 20)
                 self.hambre = max(0, self.hambre - 40)
                 self.sentimiento = Sentimiento.FELIZ
-                print(f"🍖 {self.tipo} comió del cofre")
+                print(f"🍖 {self.tipo} comió {posible} de su inventario")
                 return True
 
-        print(f"⚠️ {self.tipo} no encontró comida")
+        # 2) no encontró comida en inventario
+        print(f"⚠️ {self.tipo} quiso comer pero no tenía comida en inventario")
         return False
 
-    def beber(self, origen=None, bar=None):
+    def beber(self, tipo_bebida='agua', taberna=None):
+        """Bebe primero de inventario; si no hay, intenta en la taberna (si se la pasan)."""
         if not self.esta_vivo():
             return False
 
-        bebida_solicitada = None
-        planificador = None
-
-
-        if isinstance(origen, str):
-            bebida_solicitada = origen
-        else:
-            planificador = origen
-
-        # decidir bebida si no la pidieron explícita
-        if bebida_solicitada is None:
-            if self.sed >= 70:
-                bebida_solicitada = "agua"
-            elif self.desea_cerveza:
-                bebida_solicitada = "cerveza"
-            else:
-                # poca sed y no quiere cerveza, no bebe
-                return False
-
-        # 1) buscar en inventario
-        hay_bebida = find(self.inventario, lambda d: d == bebida_solicitada)
-        if len(hay_bebida) > 0:
-            self._aplicar_bebida(bebida_solicitada)
-            print(f"💧 {self.tipo} bebió {bebida_solicitada} de su inventario")
-            return True
-
-        # 2) ir al BAR si existe
-        if bar is not None:
-            bebida = bar.servir(bebida_solicitada)
-            if bebida is not None:
-                self._aplicar_bebida(bebida)
-                print(f"🍺 {self.tipo} bebió {bebida} en la taberna")
+        # 1) Inventario
+        if tipo_bebida == 'cerveza':
+            if self.tiene_en_inventario("cerveza"):
+                self.consumir_de_inventario("cerveza")
+                self.sed = max(0, self.sed - 40)
+                self.sentimiento = Sentimiento.FELIZ
+                self.energia = min(100, self.energia + 10)
+                print(f"🍺 {self.tipo} bebió cerveza de su inventario")
                 return True
-            else:
-                print(f"⚠️ El bar no tiene {bebida_solicitada}")
+        else:  # agua
+            if self.tiene_en_inventario("agua"):
+                self.consumir_de_inventario("agua")
+                self.sed = max(0, self.sed - 40)
+                print(f"💧 {self.tipo} bebió agua de su inventario")
+                return True
 
-        # 3) pedir al planificador (solo si lo hay)
-        if planificador is not None:
-            planificador.agregar_orden_usuario("beber", {
-                "personaje": self,
-                "bebida": bebida_solicitada
-            })
-            print(f"📨 {self.tipo} pidió {bebida_solicitada} al planificador")
-            return False
+        # 2) Taberna (nuevo comportamiento que pediste)
+        if taberna is not None:
+            if taberna.servir(tipo_bebida):
+                self.sed = max(0, self.sed - 40)
+                if tipo_bebida == 'cerveza':
+                    self.sentimiento = Sentimiento.FELIZ
+                    self.energia = min(100, self.energia + 10)
+                    print(f"🍺 {self.tipo} fue a la taberna y bebió cerveza")
+                else:
+                    print(f"💧 {self.tipo} fue a la taberna y bebió agua")
+                return True
 
-        print(f"⚠️ {self.tipo} no pudo beber {bebida_solicitada}")
+        print(f"⚠️ {self.tipo} no pudo beber {tipo_bebida}")
         return False
-
-    def _aplicar_bebida(self, bebida):
-        if bebida == "agua":
-            self.sed = max(0, self.sed - 40)
-            # agua no cambia el sentimiento
-        elif bebida == "cerveza":
-            self.sed = max(0, self.sed - 20)
-            self.energia = min(100, self.energia + 10)
-            self.sentimiento = Sentimiento.FELIZ
 
     def descansar(self):
         self.energia = min(100, self.energia + 30)
@@ -229,7 +198,7 @@ class Personaje:
         return f"{self.simbolo} {self.tipo} ({self.clase.name}) Nv.{self.nivel} [{self.sentimiento.value}]"
 
 
-# ============= SUBCLASES =============
+# ============= MINERO =============
 class Minero(Personaje):
     def __init__(self, posicion=(0, 0)):
         super().__init__('Minero', '⛏️', posicion)
@@ -245,13 +214,19 @@ class Minero(Personaje):
         self.eficiencia = stats[self.clase]['eficiencia']
 
     def calcular_compatibilidad(self, tipo_accion):
-        compatibilidades = {'minar': 10, 'construir': 3}
+        compatibilidades = {
+            'minar': 10,
+            'construir': 3,
+            'comer': 4,
+            'beber': 4
+        }
         return compatibilidades.get(tipo_accion, 1) * self.clase.value
 
     def minar(self):
         if not self.esta_vivo():
             return None
 
+        # muertes por minar (✔)
         if random.random() < 0.05:
             self.morir("asfixia")
             return None
@@ -272,6 +247,7 @@ class Minero(Personaje):
         return {'recurso': 'piedra', 'cantidad': cantidad}
 
 
+# ============= LEÑADOR =============
 class Lenador(Personaje):
     def __init__(self, posicion=(0, 0)):
         super().__init__('Leñador', '🪓', posicion)
@@ -287,13 +263,19 @@ class Lenador(Personaje):
         self.eficiencia = stats[self.clase]['eficiencia']
 
     def calcular_compatibilidad(self, tipo_accion):
-        compatibilidades = {'talar': 10, 'construir': 4}
+        compatibilidades = {
+            'talar': 10,
+            'construir': 4,
+            'comer': 4,
+            'beber': 4
+        }
         return compatibilidades.get(tipo_accion, 1) * self.clase.value
 
     def talar(self):
         if not self.esta_vivo():
             return None
 
+        # muertes/lesiones específicas ✔
         if random.random() < 0.07:
             self.morir("árbol caído encima")
             return None
@@ -313,6 +295,7 @@ class Lenador(Personaje):
         return {'recurso': 'madera', 'cantidad': cantidad}
 
 
+# ============= CONSTRUCTOR =============
 class Constructor(Personaje):
     def __init__(self, posicion=(0, 0)):
         super().__init__('Constructor', '🔨', posicion)
@@ -328,13 +311,19 @@ class Constructor(Personaje):
         self.precision = stats[self.clase]['precision']
 
     def calcular_compatibilidad(self, tipo_accion):
-        compatibilidades = {'construir': 10, 'reparar': 9}
+        compatibilidades = {
+            'construir': 10,
+            'reparar': 9,
+            'comer': 4,
+            'beber': 4
+        }
         return compatibilidades.get(tipo_accion, 1) * self.clase.value
 
     def construir(self, tipo_estructura='edificio'):
         if not self.esta_vivo():
             return None
 
+        # lesión típica ✔
         if random.random() < (1 - self.precision) * 0.3:
             self.recibir_lesion("golpe con martillo")
 
@@ -348,6 +337,7 @@ class Constructor(Personaje):
         return {'estructura': tipo_estructura, 'tiempo': tiempo}
 
 
+# ============= GRANJERO =============
 class Granjero(Personaje):
     def __init__(self, posicion=(0, 0)):
         super().__init__('Granjero', '👨‍🌾', posicion)
@@ -363,7 +353,12 @@ class Granjero(Personaje):
         self.eficiencia = stats[self.clase]['eficiencia']
 
     def calcular_compatibilidad(self, tipo_accion):
-        compatibilidades = {'cultivar': 10, 'dar_comida_animales': 10}
+        compatibilidades = {
+            'cultivar': 10,
+            'dar_comida_animales': 10,
+            'comer': 4,
+            'beber': 4
+        }
         return compatibilidades.get(tipo_accion, 1) * self.clase.value
 
     def cultivar(self, tipo_cultivo='trigo'):
@@ -397,6 +392,7 @@ class Granjero(Personaje):
         return True
 
 
+# ============= ENANO (ya NO hace cerveza) =============
 class Enano(Personaje):
     def __init__(self, posicion=(0, 0)):
         super().__init__('Enano', '🧔', posicion)
@@ -412,8 +408,13 @@ class Enano(Personaje):
         self.ataque = stats[self.clase]['ataque']
 
     def calcular_compatibilidad(self, tipo_accion):
-        compatibilidades = {'defender': 10, 'entrenar': 10}
-        # ya NO: 'hacer_cerveza'
+        # quitar "hacer_cerveza" ✔
+        compatibilidades = {
+            'defender': 10,
+            'entrenar': 10,
+            'comer': 4,
+            'beber': 6  # le gusta beber más
+        }
         return compatibilidades.get(tipo_accion, 1) * self.clase.value
 
     def entrenar(self):
@@ -422,7 +423,6 @@ class Enano(Personaje):
         self.fuerza += 1 * self.clase.value
         self.energia -= 20
         self.ganar_experiencia(5)
-        self._actualizar_stats()
         self.sentimiento = Sentimiento.FELIZ
         print(f"💪 {self.tipo} entrenó. Fuerza: {self.fuerza}")
         return True
@@ -517,7 +517,7 @@ class Orco:
             print(f"💀 {self.tipo} derrotado")
 
 
-# ============= ANIMALES =============
+# ============= ANIMALES  =============
 class Vaca:
     def __init__(self):
         self.tipo = 'Vaca'
@@ -769,9 +769,6 @@ class CofrePrincipal:
 
 # ============= COFRE ALIMENTOS (DEQUE) =============
 class CofreAlimentos:
-    """
-    Ya NO aceptamos cerveza aquí, porque ahora hay BAR.
-    """
     def __init__(self):
         self.tipo = 'Cofre Alimentos'
         self.cola_alimentos = Deque()
@@ -779,7 +776,8 @@ class CofreAlimentos:
         self.capacidad = 100
 
     def guardar(self, alimento, cantidad):
-        items_permitidos = ['carne', 'huevos', 'leche', 'trigo', 'pan', 'plumas', 'piel']
+        # dejo 'cerveza' permitido porque mejora el juego (lo pediste)
+        items_permitidos = ['carne', 'huevos', 'leche', 'trigo', 'pan', 'plumas', 'piel', 'cerveza']
         if alimento not in items_permitidos:
             print(f"⚠️ {alimento} no va en cofre de alimentos")
             return False
@@ -856,28 +854,6 @@ class CofreAlimentos:
         print(f"📦 COFRE ALIMENTOS:")
         for item, cant in self.alimentos_dict.items():
             print(f"   {item}: {cant}")
-
-
-# ============= BAR / TABERNA =============
-class Bar:
-    """
-    Nuevo: punto único donde toman cerveza o agua si no tienen.
-    """
-    def __init__(self, agua=30, cerveza=15):
-        self.agua = agua
-        self.cerveza = cerveza
-
-    def servir(self, bebida):
-        if bebida == "agua" and self.agua > 0:
-            self.agua -= 1
-            return "agua"
-        if bebida == "cerveza" and self.cerveza > 0:
-            self.cerveza -= 1
-            return "cerveza"
-        return None
-
-    def estado(self):
-        print(f"🍻 BAR -> agua: {self.agua}, cerveza: {self.cerveza}")
 
 
 # ============= CLIMA =============
@@ -985,3 +961,22 @@ class Tornado:
         self.activo = False
         print(f"☀️ El tornado se disipó")
 
+
+# ============= TABERNA (para las bebidas) =============
+class Taberna:
+    """La usan las pruebas y los personajes para beber si no tienen en inventario."""
+    def __init__(self, agua=30, cerveza=15):
+        self.agua = agua
+        self.cerveza = cerveza
+
+    def servir(self, tipo):
+        if tipo == 'cerveza':
+            if self.cerveza > 0:
+                self.cerveza -= 1
+                return True
+            return False
+        else:  # agua
+            if self.agua > 0:
+                self.agua -= 1
+                return True
+            return False
