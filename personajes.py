@@ -127,21 +127,35 @@ class Personaje:
     def beber(self, tipo_bebida='agua', bar=None):
         if not self.esta_vivo():
             return False
+
+        if tipo_bebida == 'cerveza' and self.sed > 20:
+            tiene_agua_inv = self.tiene_en_inventario('agua')
+            tiene_agua_bar = (bar is not None and bar.servir_bebida('agua'))
+            if tiene_agua_inv or tiene_agua_bar:
+                tipo_bebida = 'agua'
+
         bebio = False
-        if tipo_bebida == 'cerveza' and self.tiene_en_inventario('cerveza'):
-            self.sed = max(0, self.sed - 40)
-            self.sentimiento = Sentimiento.FELIZ
-            self.energia = min(100, self.energia + 10)
-            bebio = True
-        elif tipo_bebida == 'agua' and self.tiene_en_inventario('agua'):
-            self.sed = max(0, self.sed - 40)
-            bebio = True
-        elif bar is not None and bar.servir_bebida(tipo_bebida):
-            self.sed = max(0, self.sed - 40)
-            if tipo_bebida == 'cerveza':
+
+        if tipo_bebida == 'cerveza':
+            if self.tiene_en_inventario('cerveza'):
+                self.energia = min(100, self.energia + 15)  
                 self.sentimiento = Sentimiento.FELIZ
-                self.energia = min(100, self.energia + 10)
-            bebio = True
+                bebio = True
+            elif bar is not None and bar.servir_bebida('cerveza'):
+                self.energia = min(100, self.energia + 15)
+                self.sentimiento = Sentimiento.FELIZ
+                bebio = True
+
+        elif tipo_bebida == 'agua':
+            if self.tiene_en_inventario('agua'):
+                self.sed = max(0, self.sed - 40)      
+                self.energia = min(100, self.energia + 8)  
+                bebio = True
+            elif bar is not None and bar.servir_bebida('agua'):
+                self.sed = max(0, self.sed - 40)
+                self.energia = min(100, self.energia + 8)
+                bebio = True
+                
         if not bebio:
             return False
         return True
