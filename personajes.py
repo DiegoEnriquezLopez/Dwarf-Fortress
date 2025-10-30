@@ -1,19 +1,8 @@
-from enum import Enum
-try:
-    from ListaEnlazada import LinkedList, to_list, find, length, iterate
-except ImportError:
-    from lista_enlazada import LinkedList, to_list, find, length, iterate
 
-try:
-    from game_queue import Queue, count, clear, queue_extend
-except ImportError:
-    pass
 
-try:
-    from deque import Deque
-except ImportError:
-    pass
-
+from ListaEnlazada import LinkedList, to_list, find, length, iterate
+from game_queue import Queue, count, clear, queue_extend
+from deque import Deque
 import random
 from enum import Enum
 
@@ -31,6 +20,12 @@ class EstadoPersonaje(Enum):
     MUERTO = "muerto"
 
 
+class Sentimiento(Enum):
+    FELIZ = "feliz"
+    TRISTE = "triste"
+    ENOJADO = "enojado"
+
+
 # ============= CLASE BASE PERSONAJE =============
 class Personaje:
     def __init__(self, tipo, simbolo, posicion=(0, 0)):
@@ -45,14 +40,13 @@ class Personaje:
         self.energia = 100
         self.hambre = 0
         self.sed = 0
-        self.moral = 100
+        self.sentimiento = Sentimiento.FELIZ
         self.oficio = tipo
         self.accion_actual = None
         self.tiempo_ocupado = 0
         self.inventario = LinkedList()
     
     def calcular_compatibilidad(self, tipo_accion):
-        """Compatibilidad base (sobrescribir en subclases)"""
         return 1.0
     
     def ganar_experiencia(self, puntos):
@@ -61,11 +55,13 @@ class Personaje:
             self.clase = ClasePersonaje.INTERMEDIO
             self.nivel = 2
             self.experiencia = 0
+            self.sentimiento = Sentimiento.FELIZ
             print(f"⬆️ {self.tipo} subió a INTERMEDIO")
         elif self.experiencia >= 200 and self.clase == ClasePersonaje.INTERMEDIO:
             self.clase = ClasePersonaje.EXPERTO
             self.nivel = 3
             self.experiencia = 0
+            self.sentimiento = Sentimiento.FELIZ
             print(f"⬆️ {self.tipo} subió a EXPERTO")
     
     def recibir_lesion(self, descripcion, es_mortal=False):
@@ -75,6 +71,7 @@ class Personaje:
             self.morir(descripcion)
         else:
             self.salud -= 30
+            self.sentimiento = Sentimiento.TRISTE
             if self.salud <= 0:
                 self.morir(descripcion)
             else:
@@ -106,15 +103,34 @@ class Personaje:
     def actualizar_necesidades(self):
         self.hambre = min(100, self.hambre + 2)
         self.sed = min(100, self.sed + 3)
-        if self.hambre > 70 or self.sed > 70:
-            self.moral = max(0, self.moral - 2)
+        
+        if self.hambre > 80 or self.sed > 80:
+            self.sentimiento = Sentimiento.ENOJADO
+        elif self.hambre > 60 or self.sed > 60:
+            self.sentimiento = Sentimiento.TRISTE
+        elif self.hambre < 30 and self.sed < 30:
+            self.sentimiento = Sentimiento.FELIZ
     
     def comer(self):
         if not self.esta_vivo():
             return False
         self.salud = min(100, self.salud + 20)
-        self.hambre = max(0, self.hambre - 30)
+        self.hambre = max(0, self.hambre - 40)
+        if self.hambre < 30:
+            self.sentimiento = Sentimiento.FELIZ
         print(f"🍖 {self.tipo} comió")
+        return True
+    
+    def beber(self, tipo_bebida='agua'):
+        if not self.esta_vivo():
+            return False
+        self.sed = max(0, self.sed - 40)
+        if tipo_bebida == 'cerveza':
+            self.sentimiento = Sentimiento.FELIZ
+            self.energia = min(100, self.energia + 10)
+            print(f"🍺 {self.tipo} bebió cerveza")
+        else:
+            print(f"💧 {self.tipo} bebió agua")
         return True
     
     def descansar(self):
@@ -127,7 +143,7 @@ class Personaje:
         return to_list(self.inventario)
     
     def __repr__(self):
-        return f"{self.simbolo} {self.tipo} ({self.clase.name}) Nv.{self.nivel}"
+        return f"{self.simbolo} {self.tipo} ({self.clase.name}) Nv.{self.nivel} [{self.sentimiento.value}]"
 
 
 # ============= MINERO =============
@@ -139,21 +155,14 @@ class Minero(Personaje):
     
     def _actualizar_stats(self):
         stats = {
-            ClasePersonaje.PRINCIPIANTE: {'minar': 10, 'velocidad': 1.0},
-            ClasePersonaje.INTERMEDIO: {'minar': 15, 'velocidad': 1.5},
-            ClasePersonaje.EXPERTO: {'minar': 20, 'velocidad': 2.0}
+            ClasePersonaje.PRINCIPIANTE: {'eficiencia': 1.0},
+            ClasePersonaje.INTERMEDIO: {'eficiencia': 1.5},
+            ClasePersonaje.EXPERTO: {'eficiencia': 2.0}
         }
-        self.habilidad_minar = stats[self.clase]['minar']
-        self.velocidad = stats[self.clase]['velocidad']
+        self.eficiencia = stats[self.clase]['eficiencia']
     
     def calcular_compatibilidad(self, tipo_accion):
-        compatibilidades = {
-            'minar': 10,
-            'construir': 5,
-            'defender': 3,
-            'talar': 2,
-            'cultivar': 1
-        }
+        compatibilidades = {'minar': 10, 'construir': 3}
         return compatibilidades.get(tipo_accion, 1) * self.clase.value
     
     def minar(self):
@@ -167,8 +176,9 @@ class Minero(Personaje):
             self.morir("intoxicación")
             return None
         
-        cantidad = random.randint(2, 5) * int(self.habilidad_minar * self.velocidad / 10)
+        cantidad = int(random.randint(2, 5) * self.eficiencia)
         self.materiales_minados += cantidad
+        self.energia -= 15
         self.ganar_experiencia(10)
         self._actualizar_stats()
         
@@ -188,21 +198,14 @@ class Lenador(Personaje):
     
     def _actualizar_stats(self):
         stats = {
-            ClasePersonaje.PRINCIPIANTE: {'talar': 10, 'velocidad': 1.0},
-            ClasePersonaje.INTERMEDIO: {'talar': 15, 'velocidad': 1.5},
-            ClasePersonaje.EXPERTO: {'talar': 20, 'velocidad': 2.0}
+            ClasePersonaje.PRINCIPIANTE: {'eficiencia': 1.0},
+            ClasePersonaje.INTERMEDIO: {'eficiencia': 1.5},
+            ClasePersonaje.EXPERTO: {'eficiencia': 2.0}
         }
-        self.habilidad_talar = stats[self.clase]['talar']
-        self.velocidad = stats[self.clase]['velocidad']
+        self.eficiencia = stats[self.clase]['eficiencia']
     
     def calcular_compatibilidad(self, tipo_accion):
-        compatibilidades = {
-            'talar': 10,
-            'construir': 6,
-            'recolectar': 4,
-            'minar': 2,
-            'defender': 2
-        }
+        compatibilidades = {'talar': 10, 'construir': 4}
         return compatibilidades.get(tipo_accion, 1) * self.clase.value
     
     def talar(self):
@@ -210,13 +213,14 @@ class Lenador(Personaje):
             return None
         
         if random.random() < 0.07:
-            self.morir("árbol caído")
+            self.morir("árbol caído encima")
             return None
         if random.random() < 0.10:
             self.recibir_lesion("corte con hacha")
         
-        cantidad = random.randint(3, 6) * int(self.habilidad_talar * self.velocidad / 10)
+        cantidad = int(random.randint(3, 6) * self.eficiencia)
         self.arboles_talados += 1
+        self.energia -= 15
         self.ganar_experiencia(8)
         self._actualizar_stats()
         
@@ -236,21 +240,14 @@ class Constructor(Personaje):
     
     def _actualizar_stats(self):
         stats = {
-            ClasePersonaje.PRINCIPIANTE: {'construir': 10, 'precision': 0.7},
-            ClasePersonaje.INTERMEDIO: {'construir': 15, 'precision': 0.85},
-            ClasePersonaje.EXPERTO: {'construir': 20, 'precision': 0.95}
+            ClasePersonaje.PRINCIPIANTE: {'precision': 0.7},
+            ClasePersonaje.INTERMEDIO: {'precision': 0.85},
+            ClasePersonaje.EXPERTO: {'precision': 0.95}
         }
-        self.habilidad_construir = stats[self.clase]['construir']
         self.precision = stats[self.clase]['precision']
     
     def calcular_compatibilidad(self, tipo_accion):
-        compatibilidades = {
-            'construir': 10,
-            'reparar': 9,
-            'minar': 5,
-            'talar': 4,
-            'defender': 2
-        }
+        compatibilidades = {'construir': 10}
         return compatibilidades.get(tipo_accion, 1) * self.clase.value
     
     def construir(self, tipo_estructura='edificio'):
@@ -258,10 +255,11 @@ class Constructor(Personaje):
             return None
         
         if random.random() < (1 - self.precision) * 0.3:
-            self.recibir_lesion("golpe martillo")
+            self.recibir_lesion("golpe con martillo")
         
         tiempo = max(1, 10 - (self.clase.value * 2))
         self.estructuras_construidas += 1
+        self.energia -= 20
         self.ganar_experiencia(15)
         self._actualizar_stats()
         
@@ -278,27 +276,23 @@ class Granjero(Personaje):
     
     def _actualizar_stats(self):
         stats = {
-            ClasePersonaje.PRINCIPIANTE: {'cultivar': 8},
-            ClasePersonaje.INTERMEDIO: {'cultivar': 12},
-            ClasePersonaje.EXPERTO: {'cultivar': 16}
+            ClasePersonaje.PRINCIPIANTE: {'eficiencia': 1.0},
+            ClasePersonaje.INTERMEDIO: {'eficiencia': 1.5},
+            ClasePersonaje.EXPERTO: {'eficiencia': 2.0}
         }
-        self.habilidad_cultivar = stats[self.clase]['cultivar']
+        self.eficiencia = stats[self.clase]['eficiencia']
     
     def calcular_compatibilidad(self, tipo_accion):
-        compatibilidades = {
-            'cultivar': 10,
-            'recolectar': 9,
-            'cazar': 4,
-            'construir': 3
-        }
+        compatibilidades = {'cultivar': 10, 'dar_comida_animales': 10}
         return compatibilidades.get(tipo_accion, 1) * self.clase.value
     
     def cultivar(self, tipo_cultivo='trigo'):
         if not self.esta_vivo():
             return None
         
-        cantidad = random.randint(4, 8) * self.clase.value
+        cantidad = int(random.randint(4, 8) * self.eficiencia)
         self.cultivos_plantados += 1
+        self.energia -= 15
         self.ganar_experiencia(7)
         self._actualizar_stats()
         
@@ -318,42 +312,39 @@ class Granjero(Personaje):
             return False
         
         alimentados = sum(1 for a in animales if hasattr(a, 'comer') and a.comer())
+        self.energia -= 10
         print(f"🌾 {self.tipo} alimentó {alimentados} animales")
         return True
 
 
-# ============= GUERRERO (ENANO) =============
-class Guerrero(Personaje):
+# ============= ENANO (GUERRERO) =============
+class Enano(Personaje):
     def __init__(self, posicion=(0, 0)):
-        super().__init__('Guerrero', '🛡️', posicion)
+        super().__init__('Enano', '🧔', posicion)
         self.fuerza = 5
+        self.cerveza_producida = 0
         self._actualizar_stats()
     
     def _actualizar_stats(self):
         stats = {
-            ClasePersonaje.PRINCIPIANTE: {'defensa': 8, 'ataque': 6},
-            ClasePersonaje.INTERMEDIO: {'defensa': 12, 'ataque': 10},
-            ClasePersonaje.EXPERTO: {'defensa': 16, 'ataque': 14}
+            ClasePersonaje.PRINCIPIANTE: {'ataque': 6},
+            ClasePersonaje.INTERMEDIO: {'ataque': 10},
+            ClasePersonaje.EXPERTO: {'ataque': 14}
         }
-        self.defensa = stats[self.clase]['defensa']
         self.ataque = stats[self.clase]['ataque']
     
     def calcular_compatibilidad(self, tipo_accion):
-        compatibilidades = {
-            'defender': 10,
-            'atacar': 10,
-            'patrullar': 8,
-            'minar': 3,
-            'construir': 2
-        }
+        compatibilidades = {'defender': 10, 'entrenar': 10, 'hacer_cerveza': 8}
         return compatibilidades.get(tipo_accion, 1) * self.clase.value
     
     def entrenar(self):
         if not self.esta_vivo():
             return False
         self.fuerza += 1 * self.clase.value
+        self.energia -= 20
         self.ganar_experiencia(5)
         self._actualizar_stats()
+        self.sentimiento = Sentimiento.FELIZ
         print(f"💪 {self.tipo} entrenó. Fuerza: {self.fuerza}")
         return True
     
@@ -361,23 +352,39 @@ class Guerrero(Personaje):
         if not self.esta_vivo():
             return False
         
-        poder_guerrero = self.fuerza * self.clase.value
+        poder_enano = self.fuerza * self.clase.value
         poder_enemigo = enemigo.poder_ataque
         
         print(f"⚔️ {self.tipo} vs {enemigo.tipo}")
         
-        if poder_guerrero >= poder_enemigo:
-            enemigo.recibir_dano(poder_guerrero)
+        if poder_enano >= poder_enemigo:
+            enemigo.recibir_dano(poder_enano)
             self.ganar_experiencia(20)
+            self.sentimiento = Sentimiento.FELIZ
             print(f"✅ {self.tipo} defendió exitosamente")
             return True
         else:
-            diferencia = poder_enemigo - poder_guerrero
+            diferencia = poder_enemigo - poder_enano
             if diferencia > 30:
                 self.morir(f"ataque de {enemigo.tipo}")
             else:
                 self.recibir_lesion(f"ataque de {enemigo.tipo}")
             return False
+    
+    def hacer_cerveza(self, trigo_cantidad):
+        if not self.esta_vivo():
+            return 0
+        
+        if trigo_cantidad < 2:
+            print(f"⚠️ Se necesitan al menos 2 trigos para hacer cerveza")
+            return 0
+        
+        cerveza = (trigo_cantidad // 2) * self.clase.value
+        self.cerveza_producida += cerveza
+        self.energia -= 10
+        self.sentimiento = Sentimiento.FELIZ
+        print(f"🍺 {self.tipo} produjo {cerveza} cervezas")
+        return cerveza
 
 
 # ============= ENEMIGOS =============
@@ -446,12 +453,13 @@ class Orco:
             print(f"💀 {self.tipo} derrotado")
 
 
-# ============= ANIMALES =============
+# ============= ANIMALES  =============
 class Vaca:
     def __init__(self):
         self.tipo = 'Vaca'
         self.simbolo = '🐄'
         self.hambre = 0
+        self.sed = 0
         self.viva = True
         self.leche_disponible = 0
     
@@ -462,8 +470,14 @@ class Vaca:
         self.leche_disponible += 1
         return True
     
+    def beber(self):
+        if not self.viva:
+            return False
+        self.sed = max(0, self.sed - 50)
+        return True
+    
     def dar_leche(self):
-        if not self.viva or self.hambre > 50:
+        if not self.viva or self.hambre > 50 or self.sed > 50:
             return 0
         leche = self.leche_disponible
         self.leche_disponible = 0
@@ -477,12 +491,22 @@ class Vaca:
         print(f"🔪 Vaca sacrificada")
         return {'carne': 10, 'piel': 5}
     
+    def atacar_personaje(self, personaje):
+        if not self.viva:
+            return False
+        if random.random() < 0.05:
+            personaje.recibir_lesion("ataque de vaca")
+            print(f"🐄 ¡Vaca atacó a {personaje.tipo}!")
+            return True
+        return False
+    
     def actualizar(self):
         if self.viva:
             self.hambre = min(100, self.hambre + 15)
-            if self.hambre >= 100:
+            self.sed = min(100, self.sed + 10)
+            if self.hambre >= 100 or self.sed >= 100:
                 self.viva = False
-                print(f"💀 Vaca murió de hambre")
+                print(f"💀 Vaca murió de hambre/sed")
 
 
 class Gallina:
@@ -490,6 +514,7 @@ class Gallina:
         self.tipo = 'Gallina'
         self.simbolo = '🐔'
         self.hambre = 0
+        self.sed = 0
         self.viva = True
     
     def comer(self):
@@ -498,8 +523,14 @@ class Gallina:
         self.hambre = max(0, self.hambre - 50)
         return True
     
+    def beber(self):
+        if not self.viva:
+            return False
+        self.sed = max(0, self.sed - 50)
+        return True
+    
     def poner_huevo(self):
-        if not self.viva or self.hambre > 50:
+        if not self.viva or self.hambre > 50 or self.sed > 50:
             return 0
         huevos = random.randint(1, 3)
         print(f"🥚 Gallina puso {huevos} huevos")
@@ -515,9 +546,10 @@ class Gallina:
     def actualizar(self):
         if self.viva:
             self.hambre = min(100, self.hambre + 20)
-            if self.hambre >= 100:
+            self.sed = min(100, self.sed + 15)
+            if self.hambre >= 100 or self.sed >= 100:
                 self.viva = False
-                print(f"💀 Gallina murió de hambre")
+                print(f"💀 Gallina murió de hambre/sed")
 
 
 class Cerdo:
@@ -525,12 +557,19 @@ class Cerdo:
         self.tipo = 'Cerdo'
         self.simbolo = '🐷'
         self.hambre = 0
+        self.sed = 0
         self.vivo = True
     
     def comer(self):
         if not self.vivo:
             return False
         self.hambre = max(0, self.hambre - 50)
+        return True
+    
+    def beber(self):
+        if not self.vivo:
+            return False
+        self.sed = max(0, self.sed - 50)
         return True
     
     def sacrificar(self):
@@ -543,9 +582,10 @@ class Cerdo:
     def actualizar(self):
         if self.vivo:
             self.hambre = min(100, self.hambre + 18)
-            if self.hambre >= 100:
+            self.sed = min(100, self.sed + 12)
+            if self.hambre >= 100 or self.sed >= 100:
                 self.vivo = False
-                print(f"💀 Cerdo murió de hambre")
+                print(f"💀 Cerdo murió de hambre/sed")
 
 
 # ============= CULTIVOS =============
@@ -577,10 +617,6 @@ class Trigo:
 
 # ============= COFRE PRINCIPAL (QUEUE) =============
 class CofrePrincipal:
-    """
-    USA QUEUE (FIFO)
-    Recursos + herramientas SOLO de la aldea (NO enemigos)
-    """
     def __init__(self):
         self.tipo = 'Cofre Principal'
         self.cola_recursos = Queue()
@@ -590,14 +626,7 @@ class CofrePrincipal:
         self.capacidad = 200
     
     def inicializar_herramientas(self):
-        """Herramientas iniciales del juego"""
-        herramientas = {
-            'pico': 3,
-            'hacha': 3,
-            'martillo': 2,
-            'azada': 2,
-            'espada': 2
-        }
+        herramientas = {'pico': 3, 'hacha': 3, 'martillo': 2, 'azada': 2, 'espada': 2}
         for h, cant in herramientas.items():
             self.guardar_herramienta(h, cant)
     
@@ -618,7 +647,6 @@ class CofrePrincipal:
         return True
     
     def guardar_herramienta(self, herramienta, cantidad, de_personaje=None):
-        """NO acepta items de enemigos"""
         if de_personaje and hasattr(de_personaje, 'tipo'):
             if de_personaje.tipo in ['Duende', 'Orco']:
                 print(f"🚫 NO se guardan items de enemigos")
@@ -677,10 +705,6 @@ class CofrePrincipal:
 
 # ============= COFRE ALIMENTOS (DEQUE) =============
 class CofreAlimentos:
-    """
-    USA DEQUE (FIFO por frescura)
-    Los alimentos más viejos se toman primero
-    """
     def __init__(self):
         self.tipo = 'Cofre Alimentos'
         self.cola_alimentos = Deque()
@@ -709,7 +733,6 @@ class CofreAlimentos:
         return True
     
     def retirar(self, alimento, cantidad):
-        """Retira desde el frente (más viejo primero)"""
         if self.alimentos_dict.get(alimento, 0) < cantidad:
             print(f"⚠️ No hay suficiente {alimento}")
             return False
@@ -738,7 +761,6 @@ class CofreAlimentos:
         return True
     
     def actualizar_frescura(self):
-        """Degrada frescura, elimina alimentos echados a perder"""
         temp = Deque()
         deteriorados = 0
         
@@ -812,7 +834,7 @@ class Tormenta:
         if random.random() < prob_rayo and personajes:
             victima = random.choice(personajes)
             if victima.esta_vivo():
-                print(f"⚡ ¡Rayo!")
+                print(f"⚡ ¡Rayo cayó!")
                 victima.morir("impacto de rayo")
         
         prob_inundacion = self.intensidad * 0.08
