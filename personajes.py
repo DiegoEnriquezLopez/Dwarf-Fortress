@@ -1,5 +1,3 @@
-# personajes.py
-
 from ListaEnlazada import LinkedList, to_list, find, length
 from game_queue import Queue
 from deque import Deque
