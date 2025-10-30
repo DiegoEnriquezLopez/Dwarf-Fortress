@@ -1,5 +1,5 @@
 from game_queue import Queue, count
-from Heap import QHeap, change_priority
+from Heap import QHeap
 from enum import Enum
 
 
@@ -14,12 +14,17 @@ class TipoEvento(Enum):
 
 
 class Planificador:
-    def __init__(self, gestor_poblacion, estado_juego, bar=None):
+    """
+    Usa SOLAMENTE las estructuras que sí necesitamos:
+    - Queue para el buffer
+    - QHeap como cola de prioridad del planificador (✔ requisito)
+    """
+
+    def __init__(self, gestor_poblacion, estado_juego):
         self.buffer_ordenes = Queue()
         self.cola_prioridades = QHeap()
         self.gestor = gestor_poblacion
         self.estado_juego = estado_juego
-        self.bar = bar  # <-- NUEVO
         self.acciones_ejecutadas = []
         self._tamanio_heap = 0
 
@@ -44,18 +49,16 @@ class Planificador:
             self._generar_orden_resguardo_urgente()
             self._generar_orden_reparar()
             print("🌪️ Tornado - Órdenes de emergencia generadas")
-            self.ajustar_prioridades_por_evento(factor=0.7)
 
         elif evento_tipo == TipoEvento.ATAQUE_ENEMIGO:
             enemigo = detalles.get('enemigo')
             self._generar_orden_defender(enemigo)
             print(f"⚔️ Ataque enemigo - Orden de defensa generada")
-            self.ajustar_prioridades_por_evento(factor=0.6)
 
         elif evento_tipo == TipoEvento.HAMBRE_CRITICA:
+            # aquí puede ser "cultivar" o "ir a cofre" según tu juego
             self._generar_orden_conseguir_comida()
             print("🍖 Hambre crítica - Orden de comida generada")
-            self.ajustar_prioridades_por_evento(factor=0.8)
 
         elif evento_tipo == TipoEvento.EDIFICIO_DAÑADO:
             edificio = detalles.get('edificio')
@@ -101,6 +104,7 @@ class Planificador:
     def _generar_orden_conseguir_comida(self):
         orden = {
             'tipo_evento': TipoEvento.HAMBRE_CRITICA,
+            # puede ir a cultivar o a cofre; lo dejamos en cultivar
             'accion': 'cultivar',
             'parametros': {'urgencia': 'alta'},
             'timestamp': self.estado_juego.tiempo_actual if hasattr(self.estado_juego, 'tiempo_actual') else 0
@@ -108,6 +112,9 @@ class Planificador:
         self.buffer_ordenes.enqueue(orden)
 
     def calcular_prioridad(self, orden, personaje):
+        """
+        Menor valor = mayor prioridad (min-heap)
+        """
         compatibilidad = personaje.calcular_compatibilidad(orden['accion'])
         nivel_bonus = personaje.nivel if hasattr(personaje, 'nivel') else 1
 
@@ -141,24 +148,42 @@ class Planificador:
 
     def _calcular_urgencia_recursos(self, accion):
         urgencia = 0.0
+
         if hasattr(self.estado_juego, 'recursos'):
             recursos = self.estado_juego.recursos
+
             if accion == 'talar' and recursos.get('madera', 0) < 10:
                 urgencia += 15.0
+
             if accion == 'minar' and recursos.get('piedra', 0) < 10:
                 urgencia += 15.0
-            if accion in ['cultivar', 'dar_comida_animales', 'comer']:
+
+            if accion in ['cultivar', 'dar_comida_animales']:
                 comida_total = recursos.get('carne', 0) + recursos.get('trigo', 0)
                 if comida_total < 20:
                     urgencia += 20.0
+
+            # si alguien manda "beber" o "comer" como acción central
+            if accion == 'comer':
+                comida_total = recursos.get('carne', 0) + recursos.get('trigo', 0)
+                if comida_total < 10:
+                    urgencia += 25.0
+
             if accion == 'beber':
-                # ahora beber depende del BAR, pero aún puede haber urgencia
                 agua = recursos.get('agua', 0)
-                if agua < 5:
-                    urgencia += 10.0
+                cerveza = recursos.get('cerveza', 0)
+                if agua + cerveza < 10:
+                    urgencia += 25.0
+
         return urgencia
 
     def procesar_ciclo(self):
+        """
+        1. Sacar del buffer (Queue)
+        2. Calcular prioridad por personaje disponible
+        3. Meter al heap (QHeap)  ✔
+        4. Despachar las mejores
+        """
         ordenes_procesadas = 0
         max_ordenes = 5
 
@@ -176,11 +201,13 @@ class Planificador:
 
             for personaje in personajes_disponibles:
                 prioridad = self.calcular_prioridad(orden, personaje)
+
                 tarea = {
                     'orden': orden,
                     'personaje': personaje,
                     'prioridad': prioridad
                 }
+
                 self.cola_prioridades.enqueue(prioridad, tarea)
                 self._tamanio_heap += 1
 
@@ -190,6 +217,7 @@ class Planificador:
 
     def _obtener_personajes_disponibles(self):
         disponibles = []
+
         if hasattr(self.gestor, 'enanos_disponibles'):
             temp = []
             while not self.gestor.enanos_disponibles.empty():
@@ -197,8 +225,10 @@ class Planificador:
                 if enano.esta_disponible():
                     disponibles.append(enano)
                 temp.append(enano)
+
             for enano in temp:
                 self.gestor.enanos_disponibles.push_back(enano)
+
         return disponibles
 
     def _despachar_acciones(self):
@@ -224,31 +254,6 @@ class Planificador:
             print(f"✅ {orden['accion']} por {personaje.tipo} (prioridad: {prioridad:.2f})")
 
     def _ejecutar_accion(self, personaje, orden):
-        accion_tipo = orden['accion']
-
-        if accion_tipo == 'comer':
-            personaje.comer()
-            self.acciones_ejecutadas.append({
-                'personaje': personaje.tipo,
-                'accion': 'comer',
-                'timestamp': self.estado_juego.tiempo_actual if hasattr(self.estado_juego, 'tiempo_actual') else 0
-            })
-            return
-
-        if accion_tipo == 'beber':
-            # si vino con parametros de bebida, se los pasamos
-            bebida = orden.get('parametros', {}).get('bebida')
-            if bebida:
-                personaje.beber(bebida, bar=self.bar)
-            else:
-                personaje.beber(bar=self.bar)
-            self.acciones_ejecutadas.append({
-                'personaje': personaje.tipo,
-                'accion': 'beber',
-                'timestamp': self.estado_juego.tiempo_actual if hasattr(self.estado_juego, 'tiempo_actual') else 0
-            })
-            return
-
         accion_info = {
             'tipo': orden['accion'],
             'duracion': self._calcular_duracion(orden['accion']),
@@ -275,7 +280,6 @@ class Planificador:
             'cultivar': 10,
             'defender': 5,
             'atacar': 5,
-            'entrenar': 7,
             'dar_comida_animales': 5,
             'resguardar': 3,
             'comer': 2,
@@ -283,18 +287,9 @@ class Planificador:
         }
         return duraciones.get(accion, 10)
 
-    def ajustar_prioridades_por_evento(self, factor=0.8):
-        try:
-            for i, nodo in enumerate(self.cola_prioridades.heap):
-                prioridad, tarea = nodo
-                nueva_prioridad = max(1, int(prioridad * factor))
-                change_priority(self.cola_prioridades, i, nueva_prioridad)
-            print("🔁 Prioridades ajustadas por evento crítico")
-        except Exception:
-            pass
-
     def obtener_estadisticas(self):
         buffer_count = count(self.buffer_ordenes) if hasattr(self.buffer_ordenes, 'size') else 0
+
         return {
             'ordenes_en_buffer': buffer_count,
             'tareas_en_heap': self._tamanio_heap,
