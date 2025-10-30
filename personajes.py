@@ -1,4 +1,4 @@
-from ListaEnlazada import LinkedList, to_list, find, length, iterate
+from ListaEnlazada import LinkedList, to_list, find
 from game_queue import Queue
 from deque import Deque
 import random
@@ -299,7 +299,9 @@ class Granjero(Personaje):
         trigo_necesario = len(animales)
         if trigo_disponible < trigo_necesario:
             return False
-        alimentados = sum(1 for a in animales if hasattr(a, 'comer') and a.comer())
+        for a in animales:
+            if hasattr(a, 'comer'):
+                a.comer()
         self.energia -= 10
         return True
 
