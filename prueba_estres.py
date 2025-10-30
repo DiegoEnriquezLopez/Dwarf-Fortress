@@ -155,7 +155,8 @@ def prueba_acciones_personajes(personajes, cofre_principal, cofre_alimentos, est
             estado_juego.estructuras.append({
                 'tipo': resultado['estructura'],
                 'destruida': False,
-                'tiempo_construccion': resultado['tiempo']
+                'tiempo_construccion': resultado['tiempo'],
+                'pos': (random.randint(0, 20), random.randint(0, 20))
             })
     for enano in enanos:
         if random.random() < 0.6:
