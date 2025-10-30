@@ -124,9 +124,8 @@ class Planificador:
                     urgencia += 25.0
         return urgencia
 
-    def procesar_ciclo(self):
+    def procesar_ciclo(self, max_ordenes=10, max_despachos=6):
         ordenes_procesadas = 0
-        max_ordenes = 5
         while ordenes_procesadas < max_ordenes:
             if self.buffer_ordenes.empty():
                 break
@@ -145,7 +144,7 @@ class Planificador:
                 self.cola_prioridades.enqueue(prioridad, tarea)
                 self._tamanio_heap += 1
             ordenes_procesadas += 1
-        self._despachar_acciones()
+        self._despachar_acciones(max_despachos)
 
     def _obtener_personajes_disponibles(self):
         disponibles = []
@@ -160,9 +159,8 @@ class Planificador:
                 self.gestor.enanos_disponibles.push_back(enano)
         return disponibles
 
-    def _despachar_acciones(self):
+    def _despachar_acciones(self, max_despachos):
         acciones_despachadas = 0
-        max_despachos = 3
         while acciones_despachadas < max_despachos:
             if self.cola_prioridades.is_empty():
                 break
