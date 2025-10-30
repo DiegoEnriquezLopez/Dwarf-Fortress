@@ -87,6 +87,7 @@ def crear_animales():
 def prueba_cofres():
     cofre_principal = CofrePrincipal()
     cofre_alimentos = CofreAlimentos()
+    cofre_principal.inicializar_herramientas()
     return cofre_principal, cofre_alimentos
 
 
@@ -99,8 +100,7 @@ def prueba_gestor_poblacion(personajes, enemigos):
     return gestor
 
 
-def prueba_planificador(gestor, estado_juego):
-    planificador = Planificador(gestor, estado_juego)
+def alimentar_planificador(planificador, estado_juego):
     acciones_base = [
         ('minar', {'cantidad': random.randint(5, 15)}),
         ('talar', {'cantidad': random.randint(5, 15)}),
@@ -120,8 +120,6 @@ def prueba_planificador(gestor, estado_juego):
         planificador.generar_ordenes_por_evento(TipoEvento.ATAQUE_ENEMIGO, {'enemigo': duende})
     if random.random() < 0.3:
         planificador.generar_ordenes_por_evento(TipoEvento.HAMBRE_CRITICA)
-    planificador.procesar_ciclo()
-    return planificador
 
 
 def prueba_acciones_personajes(personajes, cofre_principal, cofre_alimentos, estado_juego):
@@ -130,7 +128,6 @@ def prueba_acciones_personajes(personajes, cofre_principal, cofre_alimentos, est
     granjeros = [p for p in personajes if isinstance(p, Granjero) and p.esta_vivo()]
     constructores = [p for p in personajes if isinstance(p, Constructor) and p.esta_vivo()]
     enanos = [p for p in personajes if isinstance(p, Enano) and p.esta_vivo()]
-
     if mineros:
         hasta = random.randint(1, len(mineros))
         for minero in mineros[:hasta]:
@@ -138,7 +135,6 @@ def prueba_acciones_personajes(personajes, cofre_principal, cofre_alimentos, est
             if resultado:
                 cofre_principal.guardar(resultado['recurso'], resultado['cantidad'])
                 estado_juego.actualizar_recursos(resultado['recurso'], resultado['cantidad'])
-
     if lenadores:
         hasta = random.randint(1, len(lenadores))
         for lenador in lenadores[:hasta]:
@@ -146,14 +142,12 @@ def prueba_acciones_personajes(personajes, cofre_principal, cofre_alimentos, est
             if resultado:
                 cofre_principal.guardar(resultado['recurso'], resultado['cantidad'])
                 estado_juego.actualizar_recursos(resultado['recurso'], resultado['cantidad'])
-
     for granjero in granjeros:
         if random.random() < 0.7:
             resultado = granjero.cultivar('trigo')
             if resultado:
                 cofre_alimentos.guardar(resultado['cultivo'], resultado['cantidad'])
                 estado_juego.actualizar_recursos(resultado['cultivo'], resultado['cantidad'])
-
     if constructores:
         constructor = random.choice(constructores)
         resultado = constructor.construir(random.choice(['casa', 'granja', 'muro']))
@@ -163,7 +157,6 @@ def prueba_acciones_personajes(personajes, cofre_principal, cofre_alimentos, est
                 'destruida': False,
                 'tiempo_construccion': resultado['tiempo']
             })
-
     for enano in enanos:
         if random.random() < 0.6:
             enano.entrenar()
@@ -258,7 +251,9 @@ def ejecutar_todas_las_pruebas():
     estado_juego = EstadoJuego()
     cofre_principal, cofre_alimentos = prueba_cofres()
     gestor = prueba_gestor_poblacion(personajes, enemigos)
-    planificador = prueba_planificador(gestor, estado_juego)
+    planificador = Planificador(gestor, estado_juego)
+    alimentar_planificador(planificador, estado_juego)
+    planificador.procesar_ciclo()
     prueba_acciones_personajes(personajes, cofre_principal, cofre_alimentos, estado_juego)
     prueba_combate(personajes, enemigos, gestor)
     prueba_animales(animales, cofre_alimentos, estado_juego)
@@ -266,6 +261,17 @@ def ejecutar_todas_las_pruebas():
     gestor.limpiar_muertos()
     prueba_niveles_experiencia(personajes)
     prueba_necesidades(personajes, cofre_alimentos)
+    ciclos = 0
+    while len(planificador.acciones_ejecutadas) < 50 and ciclos < 20:
+        estado_juego.avanzar_tiempo()
+        gestor.actualizar_poblacion()
+        alimentar_planificador(planificador, estado_juego)
+        planificador.procesar_ciclo()
+        prueba_acciones_personajes(personajes, cofre_principal, cofre_alimentos, estado_juego)
+        prueba_animales(animales, cofre_alimentos, estado_juego)
+        prueba_clima(personajes, animales, estado_juego)
+        gestor.limpiar_muertos()
+        ciclos += 1
     planificador.mostrar_estado()
     gestor.mostrar_estado()
 
