@@ -42,27 +42,3 @@ class Queue:
 
 def count(queue):
     return queue.size
-
-
-def clear(queue):
-    queue.front = None
-    queue.rear = None
-    queue.size = 0
-
-def queue_extend(q, iterable):
-    if iterable is None:
-        return 0
-
-    if isinstance(iterable, str):
-        q.enqueue(iterable)
-        return 1
-
-    try:
-        c = 0
-        for a in iterable:
-            q.enqueue(a)
-            c += 1
-        return c
-    except Exception:
-        q.enqueue(iterable)
-        return 1
