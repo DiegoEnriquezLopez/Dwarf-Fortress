@@ -34,10 +34,9 @@ class Planificador:
     def generar_ordenes_por_evento(self, evento_tipo, detalles=None):
         detalles = detalles or {}
         if evento_tipo == TipoEvento.CLIMA_TORMENTA:
-            pass
+            self._generar_orden_reparar()
         elif evento_tipo == TipoEvento.CLIMA_TORNADO:
             self._generar_orden_reparar()
-            self._generar_orden_defender(detalles.get('enemigo'))
         elif evento_tipo == TipoEvento.ATAQUE_ENEMIGO:
             enemigo = detalles.get('enemigo')
             self._generar_orden_defender(enemigo)
@@ -46,8 +45,6 @@ class Planificador:
         elif evento_tipo == TipoEvento.EDIFICIO_DAÑADO:
             edificio = detalles.get('edificio')
             self._generar_orden_reparar(edificio)
-        elif evento_tipo == TipoEvento.CLIMA_LLUVIA:
-            pass
 
     def _generar_orden_reparar(self, edificio=None):
         orden = {
@@ -98,7 +95,7 @@ class Planificador:
             TipoEvento.CLIMA_TORNADO: 30.0,
             TipoEvento.ATAQUE_ENEMIGO: 25.0,
             TipoEvento.HAMBRE_CRITICA: 20.0,
-            TipoEvento.CLIMA_TORMENTA: 15.0,
+            TipoEvento.CLIMA_TORMENTA: 10.0,
             TipoEvento.EDIFICIO_DAÑADO: 10.0,
             TipoEvento.ORDEN_USUARIO: 5.0
         }
@@ -203,6 +200,7 @@ class Planificador:
             'cultivar': 10,
             'defender': 5,
             'atacar': 5,
+            'entrenar': 7,
             'dar_comida_animales': 5,
             'comer': 2,
             'beber': 2
@@ -210,7 +208,7 @@ class Planificador:
         return duraciones.get(accion, 10)
 
     def obtener_estadisticas(self):
-        buffer_count = count(self.buffer_ordenes) if hasattr(self.buffer_ordenes, 'size') else 0
+        buffer_count = count(self.buffer_ordenes)
         return {
             'ordenes_en_buffer': buffer_count,
             'tareas_en_heap': self._tamanio_heap,
