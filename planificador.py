@@ -1,30 +1,10 @@
-from enum import Enum
-try:
-    from ListaEnlazada import LinkedList, to_list, find, length, iterate
-except ImportError:
-    from lista_enlazada import LinkedList, to_list, find, length, iterate
 
-try:
-    from doubly_linked_list import DoublyLinkedList
-except ImportError:
-    pass
-
-try:
-    from game_queue import Queue, count, clear, queue_extend
-except ImportError:
-    pass
-
-try:
-    from deque import Deque
-except ImportError:
-    pass
-
-try:
-    from Heap import QHeap, merge, merge_recursive, change_priority, remove
-except ImportError:
-    pass
-
+from ListaEnlazada import LinkedList, to_list, find, length, iterate
+from game_queue import Queue, count, clear, queue_extend
+from deque import Deque
+from Heap import QHeap, merge, merge_recursive, change_priority, remove
 import random
+from enum import Enum
 
 
 class TipoEvento(Enum):
@@ -37,21 +17,6 @@ class TipoEvento(Enum):
     EDIFICIO_DAÑADO = "edificio_dañado"
 
 
-class TipoAccion(Enum):
-    MINAR = "minar"
-    TALAR = "talar"
-    CONSTRUIR = "construir"
-    REPARAR = "reparar"
-    CULTIVAR = "cultivar"
-    CAZAR = "cazar"
-    PESCAR = "pescar"
-    DEFENDER = "defender"
-    ATACAR = "atacar"
-    RECOLECTAR = "recolectar"
-    COCINAR = "cocinar"
-    RESGUARDAR = "resguardar"
-
-
 class Planificador:
     
     def __init__(self, gestor_poblacion, estado_juego):
@@ -60,7 +25,7 @@ class Planificador:
         self.gestor = gestor_poblacion
         self.estado_juego = estado_juego
         self.acciones_ejecutadas = []
-        self.acciones_pendientes = []
+        self._tamanio_heap = 0
     
     def agregar_orden_usuario(self, accion_tipo, parametros=None):
         orden = {
@@ -137,7 +102,7 @@ class Planificador:
     def _generar_orden_conseguir_comida(self):
         orden = {
             'tipo_evento': TipoEvento.HAMBRE_CRITICA,
-            'accion': 'cazar',
+            'accion': 'cultivar',
             'parametros': {'urgencia': 'alta'},
             'timestamp': self.estado_juego.tiempo_actual if hasattr(self.estado_juego, 'tiempo_actual') else 0
         }
@@ -192,10 +157,21 @@ class Planificador:
             if accion == 'minar' and recursos.get('piedra', 0) < 10:
                 urgencia += 15.0
             
-            if accion in ['cazar', 'cultivar', 'recolectar']:
+            if accion in ['cultivar', 'dar_comida_animales']:
                 comida_total = recursos.get('carne', 0) + recursos.get('trigo', 0)
                 if comida_total < 20:
                     urgencia += 20.0
+            
+            if accion == 'comer':
+                comida_total = recursos.get('carne', 0) + recursos.get('trigo', 0)
+                if comida_total < 10:
+                    urgencia += 25.0
+            
+            if accion == 'beber':
+                agua = recursos.get('agua', 0)
+                cerveza = recursos.get('cerveza', 0)
+                if agua + cerveza < 10:
+                    urgencia += 25.0
         
         return urgencia
     
@@ -232,6 +208,7 @@ class Planificador:
                 }
                 
                 self.cola_prioridades.enqueue(prioridad, tarea)
+                self._tamanio_heap += 1
             
             ordenes_procesadas += 1
         
@@ -262,6 +239,8 @@ class Planificador:
                 break
             
             prioridad, tarea = self.cola_prioridades.dequeue()
+            self._tamanio_heap -= 1
+            
             personaje = tarea['personaje']
             orden = tarea['orden']
             
@@ -298,13 +277,14 @@ class Planificador:
             'construir': 15,
             'reparar': 12,
             'cultivar': 10,
-            'cazar': 12,
-            'pescar': 8,
             'defender': 5,
             'atacar': 5,
-            'recolectar': 6,
-            'cocinar': 7,
-            'resguardar': 3
+            'entrenar': 7,
+            'hacer_cerveza': 8,
+            'dar_comida_animales': 5,
+            'resguardar': 3,
+            'comer': 2,
+            'beber': 2
         }
         return duraciones.get(accion, 10)
     
@@ -313,6 +293,16 @@ class Planificador:
         
         return {
             'ordenes_en_buffer': buffer_count,
-            'tareas_en_heap': len(self.acciones_pendientes),
+            'tareas_en_heap': self._tamanio_heap,
             'acciones_completadas': len(self.acciones_ejecutadas)
         }
+    
+    def mostrar_estado(self):
+        stats = self.obtener_estadisticas()
+        print("\n" + "="*50)
+        print("📊 ESTADO DEL PLANIFICADOR")
+        print("="*50)
+        print(f"📥 Órdenes en buffer: {stats['ordenes_en_buffer']}")
+        print(f"⚙️ Tareas en heap: {stats['tareas_en_heap']}")
+        print(f"✅ Acciones completadas: {stats['acciones_completadas']}")
+        print("="*50)
