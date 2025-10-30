@@ -15,11 +15,11 @@ class EstadoJuego:
         self.tiempo_actual = 0
         self.dia = 1
         self.recursos = {
-            'madera': 5,
-            'piedra': 5,
-            'trigo': 10,
-            'carne': 5,
-            'agua': 20,
+            'madera': 0,
+            'piedra': 0,
+            'trigo': 0,
+            'carne': 0,
+            'agua': 0,
             'cerveza': 0
         }
         self.estructuras = []
@@ -87,14 +87,6 @@ def crear_animales():
 def prueba_cofres():
     cofre_principal = CofrePrincipal()
     cofre_alimentos = CofreAlimentos()
-    cofre_principal.inicializar_herramientas()
-    cofre_principal.guardar('madera', random.randint(10, 25))
-    cofre_principal.guardar('piedra', random.randint(8, 18))
-    cofre_alimentos.guardar('carne', random.randint(5, 12))
-    cofre_alimentos.guardar('trigo', random.randint(8, 15))
-    cofre_alimentos.guardar('huevos', random.randint(3, 8))
-    cofre_alimentos.guardar('leche', random.randint(2, 6))
-    cofre_alimentos.guardar('agua', random.randint(10, 20))
     return cofre_principal, cofre_alimentos
 
 
