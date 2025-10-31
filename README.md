@@ -1,3 +1,7 @@
+
+
+![gui](https://github.com/user-attachments/assets/57ed2b07-e07d-4641-83c9-3d5fa40e6f62)
+
 *Dwarf Colony Simulation*
 
 This video game is inspired by Dwarf Fortress and Clash of Clans. The player manages a colony of dwarves who work, build, farm, and defend themselves from enemies. Each inhabitant has skills, energy, and emotional states that affect their performance.
