@@ -3,27 +3,20 @@
 ![gui](https://github.com/user-attachments/assets/57ed2b07-e07d-4641-83c9-3d5fa40e6f62)
 
 *Dwarf Colony Simulation*
+A strategy and colony simulation game inspired by Dwarf Fortress and Clash of Clans, developed in Python using Pygame.
 
-This video game is inspired by Dwarf Fortress and Clash of Clans. The player manages a colony of dwarves who work, build, farm, and defend themselves from enemies. Each inhabitant has skills, energy, and emotional states that affect their performance.
-
-The goal is to keep the village running efficiently:
-secure food, gather materials, build structures, and survive goblin attacks.
+The player manages a small village inhabited by dwarves who work autonomously to gather resources, farm, build structures, and defend the colony from goblin attacks. The main objective is to keep the colony stable by managing its resources, food, construction, and defense.
 
 *Main Features
-- Living and dynamic colony: dwarves work, rest, eat, and react to their surroundings.
-
-- Territory defense: invading goblins attack periodically, and dwarves must defend the village.
-
-- Resource system: collect wood, stone, wheat, milk, and eggs to keep production going.
-
-- Free construction: build houses, walls, and farms in different areas of the map.
-
-- Energy and rest cycle: dwarves get tired, rest, and recover strength naturally.
-
-- Complete visual simulation: animations, energy bars, chests, and interactive menus.
-
-- Random generation: characters, animals, enemies, structures, and natural disasters are all generated at random coordinates in every new game.
-- 
+- Autonomous Dwarves: Dwarves perform tasks such as mining, gathering wood, farming, building, and defending the colony.
+- AI Task Assignment: The game determines which dwarf is best suited to perform each assigned task.
+- Resource Management: Collect and manage wood, stone, wheat, milk, and eggs.
+- Construction System: Build and repair structures using collected resources.
+- Colony Defense: Goblins spawn randomly and attack the village, while defender dwarves automatically respond to threats.
+- Character Systems: Dwarves have different skills, health, energy, and experience that affect their performance.
+- Random Generation: Characters, animals, enemies, resources, and other elements are generated at random positions in each new game.
+- Interactive Interface: Manage tasks, characters, resources, and structures through interactive menus.
+- Animations: Characters have animated sprites for different activities and actions.
 
 *Food and Drink System
 Survival depends on the dwarves’ diet:
@@ -42,67 +35,56 @@ Defender dwarves react automatically, fighting to protect the chests and the vil
 *Characters
 
 🪓 Lumberjack
-- Activities: Chops down trees → Collects wood.
-
-- Resources obtained: Wood (stored in the Main Chest).
-
+- Chops trees and collects wood.
+- Stores collected wood in the Main Chest.
+  
 ⛏ Miner
-Activities:
-- Mines stone → Extracts materials from underground.
-
-- Builds → Helps create new structures (assists the builder).
-
-Resources obtained: Stone (stored in the Main Chest).
-
+- Mines stone and gathers materials.
+- Assists builders with construction.
+  
 🌾 Farmer
-Activities:
-- Plants crops → Grows wheat in the fields.
-- Harvests → Collects the grown wheat.
-- Milks animals → Produces milk.
-- Collects eggs → Gathers eggs from chickens.
-Resources obtained (all stored in the Food Chest):
-- Wheat
-- Milk
-- Eggs
+- Plants and harvests wheat.
+- Milks animals and collects eggs.
+- Stores food resources in the Food Chest.
 
 🏗 Builder
-Activities:
-- Builds structures.
-- Repairs structures → Fixes buildings damaged by attacks or wear.
-Resources obtained:
-Does not produce new materials, but creates or improves existing structures in the village.
+- Builds new structures.
+- Repairs damaged buildings.
 
-⚔ Defender Dwarf
-Activities:
-- Defends the village → Fights against goblin enemies.
-- Patrols → Watches over the village surroundings.
-- Trains → Increases level and combat experience.
-Resources obtained:
-Experience (levels up, improves defense and energy).
+⚔ Defender
+- Protects the village from goblins.
+- Patrols the surrounding area.
+- Gains combat experience while defending the colony.
 
 🏡 Resources and Storage
-Collected materials and food are stored in chests within the village:
-- Main Chest: stores stone, wood, and tools.
-- Food Chest: stores milk, eggs, and wheat.
-- Bar: serves drinks like water and beer to the dwarves.
+The colony uses different storage systems to manage its resources:
+- Main Chest: Stores wood, stone, and tools.
+- Food Chest: Stores wheat, milk, and eggs.
+- Bar: Provides water and beer to the dwarves.
 
 🧠 Artificial Intelligence
-Each character acts autonomously:
-- Workers look for tasks based on the colony’s needs.
-- Defenders patrol and react to nearby threats.
-- Characters rest when exhausted and return to work once recovered.
-The game maintains a balance between production, rest, and defense, creating a realistic simulation.
+- The dwarves operate autonomously based on the needs of the colony.
 
+- When the player assigns a task, the game sends the request to an internal system that determines which dwarf is best suited to perform it. The selected dwarf then moves through the map and performs the corresponding action.
+
+- Defender dwarves can also react automatically when goblins enter the village.
+
+- This creates a dynamic simulation where production, resource management, construction, and defense interact with each other.
+  
 🎨 Visual Interface
-- Top-down map view: move freely and zoom in or out.
-- Side panel: displays information about characters, resources, and structures.
-- Interactive menus: allow easy task assignment, chest access, and bar management.
-- Animations: all characters feature expressive, animated sprites.
+The game features a top-down map with:
+- Character and resource information.
+- Interactive menus and buttons.
+- Animated characters.
+- Resource storage interfaces.
+- Real-time character status information.
 
-🚀 How to Play
-1. Start the game from the main menu.
-2. Watch the village — the dwarves begin working automatically.
-3. Use buttons and menus to assign tasks or build new structures.
-4. Keep an eye on the chests and food reserves.
-5. When goblins attack, make sure your defenders are ready.
-Goal: keep the village in balance for as long as possible.
+🚀 How to run
+1. Clone the repository.
+2. Install the required dependencies.
+3. Run the main Python file.
+4. Select New Game from the main menu.
+5. Manage the colony and keep it running for as long as possible.
+
+🎯 Objective
+Keep the colony stable for as long as possible by maintaining a balance between resources, food, construction, and defense while the dwarves autonomously carry out their assigned tasks.
