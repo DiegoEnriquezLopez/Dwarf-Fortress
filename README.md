@@ -83,4 +83,5 @@ The game features a top-down map with:
 5. Manage the colony and keep it running for as long as possible.
 
 🎯 Objective
+
 Keep the colony stable for as long as possible by maintaining a balance between resources, food, construction, and defense while the dwarves autonomously carry out their assigned tasks.
