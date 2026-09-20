@@ -7,7 +7,7 @@ A strategy and colony simulation game inspired by Dwarf Fortress and Clash of Cl
 
 The player manages a small village inhabited by dwarves who work autonomously to gather resources, farm, build structures, and defend the colony from goblin attacks. The main objective is to keep the colony stable by managing its resources, food, construction, and defense.
 
-*Main Features
+🎮 Main Features
 - Autonomous Dwarves: Dwarves perform tasks such as mining, gathering wood, farming, building, and defending the colony.
 - AI Task Assignment: The game determines which dwarf is best suited to perform each assigned task.
 - Resource Management: Collect and manage wood, stone, wheat, milk, and eggs.
