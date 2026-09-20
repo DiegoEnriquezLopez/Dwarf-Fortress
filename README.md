@@ -18,19 +18,15 @@ The player manages a small village inhabited by dwarves who work autonomously to
 - Interactive Interface: Manage tasks, characters, resources, and structures through interactive menus.
 - Animations: Characters have animated sprites for different activities and actions.
 
-*Food and Drink System
-Survival depends on the dwarves’ diet:
+⚔️ Enemies and Challenges
+- Goblins spawn at random positions and periodically attack the colony.
+- Defender dwarves automatically detect and fight nearby enemies.
+- Dwarves gain experience through their activities, improving their abilities over time.
 
-- Water: reduces thirst and restores some energy.
-
-- Beer: does not reduce thirst but gives a strong energy boost.
-If a dwarf is thirsty, they will always choose water over beer.
-
-*Enemies and Challenges
-- Goblins are the main threat to the colony.
-
-- They appear in random positions on the map and attack without warning.
-Defender dwarves react automatically, fighting to protect the chests and the villagers.
+🌾 Resource Production
+- Farmers grow wheat, milk animals, and collect eggs.
+- Lumberjacks gather wood, while miners collect stone.
+- Resources are automatically stored in the corresponding chests and used for construction.
 
 *Characters
 
